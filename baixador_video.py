@@ -88,7 +88,7 @@ def tela_principal():
 
     tk.Label(janela, text="Caminho do ffmpeg (opcional):", bg="#1e1e1e", fg="white").pack()
     ffmpeg_path_entry = tk.Entry(janela, width=50, bg="#2e2e2e", fg="white", relief="flat")
-    ffmpeg_path_entry.insert(0, r"C:\\Users\\natan\\Desktop\\dist_v2\\ffmpeg.exe")  # Caminho fixo como padrão
+    ffmpeg_path_entry.insert(0, r"C:\\Users\\natan\Desktop\\dist_v2\\ffmpeg.exe")  # Caminho fixo como padrão
     ffmpeg_path_entry.pack(pady=5)
 
     formato = tk.StringVar(value="mp4")
@@ -133,7 +133,7 @@ def tela_principal():
             messagebox.showerror("Erro", "Coloque um link válido e escolha uma pasta!")
             return
 
-        ffmpeg_path = ffmpeg_path_entry.get().strip() or r"C:\\Users\\natan\\Desktop\\dist_v2\\ffmpeg.exe"
+        ffmpeg_path = ffmpeg_path_entry.get().strip() or r"C:\\Users\\natan\Desktop\\dist_v2\\ffmpeg.exe"
         qualidade = qualidade_var.get()
 
         ydl_opts = {
@@ -144,9 +144,9 @@ def tela_principal():
         }
 
         if tipo == "mp4":
-            # Configurações de qualidade
+            # Configurações de qualidade corrigidas
             if qualidade == "best":
-                ydl_opts["format"] = "bestvideo[height<=?]+bestaudio/best"
+                ydl_opts["format"] = "bestvideo+bestaudio/best"  # Melhor qualidade sem filtro inválido
             elif qualidade == "1080p":
                 ydl_opts["format"] = "bestvideo[height<=1080]+bestaudio/best"
             elif qualidade == "720p":
