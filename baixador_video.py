@@ -72,7 +72,7 @@ def tela_login():
 def tela_principal():
     janela = tk.Tk()
     janela.title("⬇️ Downloader de Vídeos e Áudios")
-    janela.geometry("500x350")
+    janela.geometry("500x400")
     janela.configure(bg="#1e1e1e")
     janela.resizable(False, False)
 
@@ -96,6 +96,12 @@ def tela_principal():
     frame_formato.pack(pady=10)
     tk.Radiobutton(frame_formato, text="🎥 Vídeo (MP4)", variable=formato, value="mp4", bg="#1e1e1e", fg="white", selectcolor="#2e2e2e").pack(side="left", padx=10)
     tk.Radiobutton(frame_formato, text="🎵 Áudio (MP3)", variable=formato, value="mp3", bg="#1e1e1e", fg="white", selectcolor="#2e2e2e").pack(side="left", padx=10)
+
+    # Adicionar escolha de qualidade
+    tk.Label(janela, text="Qualidade do vídeo:", bg="#1e1e1e", fg="white").pack(pady=5)
+    qualidade_var = tk.StringVar(value="best")
+    qualidade_menu = ttk.Combobox(janela, textvariable=qualidade_var, values=["best", "1080p", "720p", "480p"], state="readonly", width=20)
+    qualidade_menu.pack(pady=5)
 
     progresso_label = tk.Label(janela, text="", bg="#1e1e1e", fg="white")
     progresso_label.pack()
@@ -121,13 +127,15 @@ def tela_principal():
     def baixar():
         url = url_entry.get().strip()
         tipo = formato.get()
-        destino = filedialog.askdirectory(title="Escolha onde salvar")  # Cliente escolhe o destino
+        destino = filedialog.askdirectory(title="Escolha onde salvar")
 
         if not url or not destino:
             messagebox.showerror("Erro", "Coloque um link válido e escolha uma pasta!")
             return
 
-        ffmpeg_path = ffmpeg_path_entry.get().strip() or r"C:\\Users\\natan\\Desktop\\dist_v2\\ffmpeg.exe"  # Caminho fixo como fallback
+        ffmpeg_path = ffmpeg_path_entry.get().strip() or r"C:\\Users\\natan\\Desktop\\dist_v2\\ffmpeg.exe"
+        qualidade = qualidade_var.get()
+
         ydl_opts = {
             "outtmpl": os.path.join(destino, "%(title)s.%(ext)s"),
             "noplaylist": True,
@@ -136,7 +144,15 @@ def tela_principal():
         }
 
         if tipo == "mp4":
-            ydl_opts["format"] = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]"
+            # Configurações de qualidade
+            if qualidade == "best":
+                ydl_opts["format"] = "bestvideo[height<=?]+bestaudio/best"
+            elif qualidade == "1080p":
+                ydl_opts["format"] = "bestvideo[height<=1080]+bestaudio/best"
+            elif qualidade == "720p":
+                ydl_opts["format"] = "bestvideo[height<=720]+bestaudio/best"
+            elif qualidade == "480p":
+                ydl_opts["format"] = "bestvideo[height<=480]+bestaudio/best"
             ydl_opts["merge_output_format"] = "mp4"
         else:
             ydl_opts["format"] = "bestaudio/best"
