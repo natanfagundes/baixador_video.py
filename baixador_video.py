@@ -4,12 +4,9 @@ from tkinter import ttk, messagebox, filedialog
 from yt_dlp import YoutubeDL
 import hashlib
 from datetime import datetime
+import re
 
-# ======================== USUÁRIOS EMBUTIDOS ========================
-senha = "senha123"
-hash_gerado = hashlib.sha256(senha.encode('utf-8')).hexdigest()
-print(hash_gerado)
-
+# Função para carregar usuários (hardcoded)
 def carregar_usuarios():
     return [
         {
@@ -20,167 +17,147 @@ def carregar_usuarios():
         }
     ]
 
-def verificar_login_json(usuario_input, senha_input):
+# Função para verificar login
+def verificar_login(usuario, senha):
     usuarios = carregar_usuarios()
-    senha_hash_input = hashlib.sha256(senha_input.encode('utf-8')).hexdigest()
+    senha_hash = hashlib.sha256(senha.encode('utf-8')).hexdigest()
     agora = datetime.now()
 
-    for usuario in usuarios:
-        if usuario["usuario"] == usuario_input and usuario["senha_hash"] == senha_hash_input:
-            if not usuario.get("ativo", True):
-                return False, "Licença inativa."
-            validade_str = usuario.get("validade", "2099-12-31")
-            validade_data = datetime.strptime(validade_str, "%Y-%m-%d")
-            if agora > validade_data:
-                return False, "Licença expirada."
-            return True, "Licença válida."
-    return False, "Usuário ou senha inválidos."
+    for user in usuarios:
+        if user["usuario"] == usuario and user["senha_hash"] == senha_hash:
+            if not user["ativo"]:
+                return False, "Licença inativa!"
+            validade = datetime.strptime(user["validade"], "%Y-%m-%d")
+            if agora > validade:
+                return False, "Licença expirada!"
+            return True, "Login bem-sucedido!"
+    return False, "Usuário ou senha inválidos!"
 
-# ======================== TELA PRINCIPAL ========================
-def iniciar_aplicacao():
+# Função para tela de login
+def tela_login():
+    janela_login = tk.Tk()
+    janela_login.title("🔐 Login")
+    janela_login.geometry("300x180")
+    janela_login.configure(bg="#1e1e1e")
+    janela_login.resizable(False, False)
+
+    tk.Label(janela_login, text="🔒 Login", font=("Arial", 14, "bold"), bg="#1e1e1e", fg="#00ff99").pack(pady=10)
+
+    tk.Label(janela_login, text="Usuário:", bg="#1e1e1e", fg="white").pack()
+    entrada_usuario = tk.Entry(janela_login, bg="#2e2e2e", fg="white", relief="flat")
+    entrada_usuario.pack(pady=5)
+
+    tk.Label(janela_login, text="Senha:", bg="#1e1e1e", fg="white").pack()
+    entrada_senha = tk.Entry(janela_login, show="*", bg="#2e2e2e", fg="white", relief="flat")
+    entrada_senha.pack(pady=5)
+
+    def fazer_login():
+        usuario = entrada_usuario.get().strip()
+        senha = entrada_senha.get().strip()
+        if not usuario or not senha:
+            messagebox.showerror("Erro", "Preencha usuário e senha!")
+            return
+        valido, mensagem = verificar_login(usuario, senha)
+        if valido:
+            janela_login.destroy()
+            tela_principal()
+        else:
+            messagebox.showerror("Erro", mensagem)
+
+    tk.Button(janela_login, text="Entrar", command=fazer_login, bg="#00cc66", fg="white", relief="flat").pack(pady=10)
+
+    janela_login.mainloop()
+
+# Função para tela principal
+def tela_principal():
     janela = tk.Tk()
-    janela.title("🎬 Downloader YouTube, X, IG, etc - por Natan")
-    janela.geometry("500x330")
+    janela.title("⬇️ Downloader de Vídeos e Áudios")
+    janela.geometry("500x350")
     janela.configure(bg="#1e1e1e")
     janela.resizable(False, False)
 
-    fonte = ("Segoe UI", 11)
-
+    # Estilo para a barra de progresso
     style = ttk.Style(janela)
-    style.theme_use('clam')
-    style.configure("TProgressbar", thickness=20, troughcolor='#2e2e2e',
-                    background='#00cc66', bordercolor='#1e1e1e',
-                    lightcolor='#00cc66', darkcolor='#00b359')
+    style.configure("TProgressbar", background="#00cc66", troughcolor="#2e2e2e")
 
-    tk.Label(janela, text="⬇️ Multi Downloader", font=("Segoe UI Semibold", 16),
-             bg="#1e1e1e", fg="#00ff99").pack(pady=(15, 5))
+    tk.Label(janela, text="⬇️ Downloader", font=("Arial", 16, "bold"), bg="#1e1e1e", fg="#00ff99").pack(pady=10)
 
-    tk.Label(janela, text="Cole o link do vídeo (YouTube, Instagram, etc):",
-             font=fonte, bg="#1e1e1e", fg="white").pack()
-
-    url_entry = tk.Entry(janela, width=55, font=fonte,
-                         bg="#2e2e2e", fg="white", insertbackground="white", relief="flat")
+    tk.Label(janela, text="Cole o link do vídeo:", bg="#1e1e1e", fg="white").pack()
+    url_entry = tk.Entry(janela, width=50, bg="#2e2e2e", fg="white", relief="flat")
     url_entry.pack(pady=5)
 
-    var_formato = tk.StringVar(value="mp4")
+    tk.Label(janela, text="Caminho do ffmpeg (opcional):", bg="#1e1e1e", fg="white").pack()
+    ffmpeg_path_entry = tk.Entry(janela, width=50, bg="#2e2e2e", fg="white", relief="flat")
+    ffmpeg_path_entry.insert(0, r"C:\\Users\\natan\\Desktop\\dist_v2\\ffmpeg.exe")  # Caminho fixo como padrão
+    ffmpeg_path_entry.pack(pady=5)
 
-    formato_frame = tk.Frame(janela, bg="#1e1e1e")
-    formato_frame.pack(pady=10)
+    formato = tk.StringVar(value="mp4")
+    frame_formato = tk.Frame(janela, bg="#1e1e1e")
+    frame_formato.pack(pady=10)
+    tk.Radiobutton(frame_formato, text="🎥 Vídeo (MP4)", variable=formato, value="mp4", bg="#1e1e1e", fg="white", selectcolor="#2e2e2e").pack(side="left", padx=10)
+    tk.Radiobutton(frame_formato, text="🎵 Áudio (MP3)", variable=formato, value="mp3", bg="#1e1e1e", fg="white", selectcolor="#2e2e2e").pack(side="left", padx=10)
 
-    tk.Radiobutton(formato_frame, text="🎥 MP4 (vídeo)", variable=var_formato, value="mp4",
-                   font=fonte, bg="#1e1e1e", fg="white", selectcolor="#2e2e2e", activebackground="#1e1e1e").pack(side="left", padx=20)
-    tk.Radiobutton(formato_frame, text="🎵 MP3 (áudio)", variable=var_formato, value="mp3",
-                   font=fonte, bg="#1e1e1e", fg="white", selectcolor="#2e2e2e", activebackground="#1e1e1e").pack(side="left", padx=20)
-
-    progresso_label = tk.Label(janela, text="", font=("Segoe UI", 10, "italic"),
-                               bg="#1e1e1e", fg="white")
+    progresso_label = tk.Label(janela, text="", bg="#1e1e1e", fg="white")
     progresso_label.pack()
 
-    barra = ttk.Progressbar(janela, length=400, mode='determinate')
+    barra = ttk.Progressbar(janela, length=400, mode="determinate")
     barra.pack(pady=10)
 
+    # Função para mostrar progresso
     def mostrar_progresso(d):
-        if d['status'] == 'downloading':
-            percentual_str = d.get('_percent_str', '0.0%').strip()
-            try:
-                percentual = float(percentual_str.strip('%'))
-            except:
-                percentual = 0
-            barra['value'] = percentual
-            progresso_label.config(text=f"📥 Baixando: {percentual_str}")
-            janela.update_idletasks()
-        elif d['status'] == 'finished':
-            progresso_label.config(text="✅ Download finalizado!")
-            barra['value'] = 100
-            janela.update_idletasks()
+        if d["status"] == "downloading":
+            percentual_str = d.get("_percent_str", "0.0%")
+            percentual_num = re.search(r"\d+\.?\d*", percentual_str.replace("%", "").strip())
+            if percentual_num:
+                percentual = float(percentual_num.group())
+                barra["value"] = percentual
+                progresso_label.config(text=f"Baixando: {percentual:.1f}%")
+                janela.update()
+        elif d["status"] == "finished":
+            progresso_label.config(text="✅ Download concluído!")
+            barra["value"] = 100
+            janela.update()
 
     def baixar():
         url = url_entry.get().strip()
-        formato = var_formato.get()
-        destino = filedialog.askdirectory(title="Escolha onde salvar")
+        tipo = formato.get()
+        destino = filedialog.askdirectory(title="Escolha onde salvar")  # Cliente escolhe o destino
 
         if not url or not destino:
-            messagebox.showerror("Erro", "⚠️ URL ou destino inválido!")
+            messagebox.showerror("Erro", "Coloque um link válido e escolha uma pasta!")
             return
 
+        ffmpeg_path = ffmpeg_path_entry.get().strip() or r"C:\\Users\\natan\\Desktop\\dist_v2\\ffmpeg.exe"  # Caminho fixo como fallback
         ydl_opts = {
-            'outtmpl': os.path.join(destino, '%(title)s.%(ext)s'),
-            'noplaylist': True,
-            'quiet': True,
-            'progress_hooks': [mostrar_progresso],
-            'ffmpeg_location': 'ffmpeg.exe'
+            "outtmpl": os.path.join(destino, "%(title)s.%(ext)s"),
+            "noplaylist": True,
+            "progress_hooks": [mostrar_progresso],
+            "ffmpeg_location": ffmpeg_path,
         }
 
-        if formato == "mp4":
-            ydl_opts.update({
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
-                'merge_output_format': 'mp4',
-            })
+        if tipo == "mp4":
+            ydl_opts["format"] = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]"
+            ydl_opts["merge_output_format"] = "mp4"
         else:
-            ydl_opts.update({
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-            })
+            ydl_opts["format"] = "bestaudio/best"
+            ydl_opts["postprocessors"] = [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }]
 
         try:
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-            messagebox.showinfo("Concluído", "✅ Download finalizado com sucesso!\nFeito por Natan")
+            messagebox.showinfo("Sucesso", "Download concluído!")
         except Exception as e:
-            messagebox.showerror("Erro", f"❌ Ocorreu um erro:\n{str(e)}")
+            messagebox.showerror("Erro", f"Falha no download: {str(e)}")
             progresso_label.config(text="")
-            barra['value'] = 0
+            barra["value"] = 0
 
-    def on_enter(e): botao.config(bg="#00e673")
-    def on_leave(e): botao.config(bg="#00cc66")
-
-    botao = tk.Button(janela, text="⬇️ Baixar Agora", command=baixar,
-                      bg="#00cc66", fg="white", font=("Segoe UI Semibold", 11),
-                      activebackground="#00b359", activeforeground="white",
-                      relief="flat", padx=20, pady=8, bd=0)
-    botao.pack(pady=10)
-    botao.bind("<Enter>", on_enter)
-    botao.bind("<Leave>", on_leave)
+    tk.Button(janela, text="⬇️ Baixar", command=baixar, bg="#00cc66", fg="white", relief="flat").pack(pady=10)
 
     janela.mainloop()
 
-# ======================== TELA DE LOGIN ========================
-def login():
-    usuario = entrada_usuario.get()
-    senha = entrada_senha.get()
-
-    valido, mensagem = verificar_login_json(usuario, senha)
-    if valido:
-        login_janela.destroy()
-        iniciar_aplicacao()
-    else:
-        messagebox.showerror("Erro", mensagem)
-
-login_janela = tk.Tk()
-login_janela.title("🔐 Acesso Restrito")
-login_janela.geometry("350x200")
-login_janela.configure(bg="#1e1e1e")
-login_janela.resizable(False, False)
-
-tk.Label(login_janela, text="🔒 Login de Acesso", font=("Segoe UI", 14, "bold"),
-         bg="#1e1e1e", fg="#00ff99").pack(pady=10)
-
-tk.Label(login_janela, text="Usuário:", bg="#1e1e1e", fg="white").pack()
-entrada_usuario = tk.Entry(login_janela, font=("Segoe UI", 11),
-                           bg="#2e2e2e", fg="white", relief="flat")
-entrada_usuario.pack(pady=5)
-
-tk.Label(login_janela, text="Senha:", bg="#1e1e1e", fg="white").pack()
-entrada_senha = tk.Entry(login_janela, show="*", font=("Segoe UI", 11),
-                         bg="#2e2e2e", fg="white", relief="flat")
-entrada_senha.pack(pady=5)
-
-tk.Button(login_janela, text="Entrar", command=login,
-          bg="#00cc66", fg="white", font=("Segoe UI", 10),
-          activebackground="#00b359", relief="flat", padx=15).pack(pady=10)
-
-login_janela.mainloop()
+# Iniciar o programa
+tela_login()
