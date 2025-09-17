@@ -1,4 +1,4 @@
-# 🎬 Multi Downloader com Login (YouTube, Instagram, X, etc).
+# 🎬 Multi Downloader com Login (YouTube, Instagram, X, etc)
 
 Este projeto é um **aplicativo em Python com interface gráfica (Tkinter)** que permite baixar vídeos e músicas de várias plataformas (YouTube, Instagram, X/Twitter, etc.) em **MP4 (vídeo)** ou **MP3 (áudio)**.  
 O sistema conta ainda com uma **tela de login protegida por hash (SHA-256)**, garantindo acesso restrito.
